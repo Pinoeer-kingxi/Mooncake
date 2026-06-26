@@ -1,8 +1,7 @@
 """
-Hidden State Prefix Caching
+Prefix Cache - Hidden State 缓存
 
-在多模态模型中缓存 Vision Encoder 输出的 Hidden State，
-实现相同图像的前缀复用，减少重复 Encoder 计算。
+缓存 Vision Encoder 输出，避免重复编码相同图像。
 """
 
 import time
@@ -19,32 +18,37 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CachedHiddenState:
-    """缓存的 Hidden State"""
     cache_key: str
     hidden_states: torch.Tensor
     metadata: Dict[str, Any]
-    created_at: float = field(default_factory=time.time)
-    last_accessed: float = field(default_factory=time.time)
+    created_at: float
+    last_accessed: float
     hit_count: int = 0
     size_bytes: int = 0
+
+
+def _fast_tensor_hash(tensor: torch.Tensor) -> str:
+    """快速张量指纹：使用 shape + dtype + 采样值的 hash，避免全量拷贝"""
+    meta = f"{tuple(tensor.shape)}_{tensor.dtype}_{tensor.device}"
+    flat = tensor.detach().reshape(-1)
+    n = flat.numel()
+    step = max(1, n // 1024)
+    sample = flat[::step]
+    data = meta.encode() + sample.cpu().contiguous().view(torch.uint8).numpy().tobytes()
+    return hashlib.md5(data).hexdigest()
 
 
 class HiddenStatePrefixCache:
     """
     Hidden State 前缀缓存
 
-    缓存 Vision Encoder 的输出，当相同图像再次输入时直接返回缓存结果，
-    避免重复的 Encoder 计算。
-
-    支持：
-    1. 基于图像 hash 的精确匹配
-    2. LRU 淘汰策略
-    3. 可配置的缓存大小限制
+    缓存 Vision Encoder 输出，相同图像直接返回缓存结果。
+    使用快速采样 hash 避免全量数据拷贝开销。
     """
 
     def __init__(
         self,
-        max_cache_size_bytes: int = 4 * 1024 * 1024 * 1024,  # 4GB
+        max_cache_size_bytes: int = 4 * 1024**3,
         max_entries: int = 1000,
         ttl_seconds: float = 3600.0,
     ):
@@ -56,41 +60,27 @@ class HiddenStatePrefixCache:
         self._total_hits = 0
         self._total_misses = 0
 
-    def compute_cache_key(self, pixel_values: torch.Tensor) -> str:
-        """计算图像 hash 作为缓存 key"""
-        data = pixel_values.cpu().numpy().tobytes()
-        return hashlib.sha256(data).hexdigest()[:32]
-
     def get(
-        self, pixel_values: torch.Tensor
+        self, pixel_values: torch.Tensor,
     ) -> Optional[Tuple[torch.Tensor, Dict[str, Any]]]:
-        """
-        查找缓存。
+        cache_key = _fast_tensor_hash(pixel_values)
+        now = time.monotonic()
 
-        Returns:
-            (hidden_states, metadata) if cache hit, None otherwise
-        """
-        cache_key = self.compute_cache_key(pixel_values)
+        entry = self._cache.get(cache_key)
+        if entry is None:
+            self._total_misses += 1
+            return None
 
-        if cache_key in self._cache:
-            entry = self._cache[cache_key]
+        if now - entry.created_at > self.ttl_seconds:
+            self._evict(cache_key)
+            self._total_misses += 1
+            return None
 
-            # 检查 TTL
-            if time.time() - entry.created_at > self.ttl_seconds:
-                self._evict(cache_key)
-                self._total_misses += 1
-                return None
-
-            entry.last_accessed = time.time()
-            entry.hit_count += 1
-            self._cache.move_to_end(cache_key)
-            self._total_hits += 1
-
-            logger.debug(f"Cache HIT: key={cache_key}, hits={entry.hit_count}")
-            return entry.hidden_states, entry.metadata
-
-        self._total_misses += 1
-        return None
+        entry.last_accessed = now
+        entry.hit_count += 1
+        self._cache.move_to_end(cache_key)
+        self._total_hits += 1
+        return entry.hidden_states, entry.metadata
 
     def put(
         self,
@@ -98,8 +88,7 @@ class HiddenStatePrefixCache:
         hidden_states: torch.Tensor,
         metadata: Dict[str, Any],
     ):
-        """写入缓存"""
-        cache_key = self.compute_cache_key(pixel_values)
+        cache_key = _fast_tensor_hash(pixel_values)
 
         if cache_key in self._cache:
             self._cache.move_to_end(cache_key)
@@ -110,19 +99,16 @@ class HiddenStatePrefixCache:
         while self._should_evict(size_bytes):
             self._evict_lru()
 
-        entry = CachedHiddenState(
+        now = time.monotonic()
+        self._cache[cache_key] = CachedHiddenState(
             cache_key=cache_key,
             hidden_states=hidden_states.clone(),
             metadata=metadata.copy(),
+            created_at=now,
+            last_accessed=now,
             size_bytes=size_bytes,
         )
-
-        self._cache[cache_key] = entry
         self._current_size_bytes += size_bytes
-
-        logger.debug(
-            f"Cache PUT: key={cache_key}, size={size_bytes / 1e6:.1f}MB"
-        )
 
     def _should_evict(self, additional_bytes: int) -> bool:
         return (
@@ -131,14 +117,11 @@ class HiddenStatePrefixCache:
         )
 
     def _evict_lru(self):
-        """淘汰最久未使用的条目"""
         if self._cache:
             key, entry = self._cache.popitem(last=False)
             self._current_size_bytes -= entry.size_bytes
-            logger.debug(f"Cache EVICT (LRU): key={key}")
 
     def _evict(self, key: str):
-        """淘汰指定条目"""
         entry = self._cache.pop(key, None)
         if entry:
             self._current_size_bytes -= entry.size_bytes

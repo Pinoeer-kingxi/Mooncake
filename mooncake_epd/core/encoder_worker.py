@@ -12,8 +12,6 @@ from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import numpy as np
-from PIL import Image
 
 logger = logging.getLogger(__name__)
 

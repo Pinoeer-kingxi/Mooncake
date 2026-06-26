@@ -8,11 +8,10 @@ Prefill Worker - Prefill 阶段
 import time
 import logging
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

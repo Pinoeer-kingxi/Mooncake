@@ -1,29 +1,26 @@
 """
 EPD Pipeline - 三阶段流水线编排
-
-将 Encoder、Prefill、Decode 三个阶段串联为完整的推理流水线，
-支持单节点和多节点部署模式。
 """
 
 import time
 import logging
 from typing import Dict, Any, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
-from PIL import Image
 
 from .transfer_engine import MooncakeTransferWrapper
-from .encoder_worker import EncoderWorker, EncoderOutput
-from .prefill_worker import PrefillWorker, PrefillOutput
-from .decode_worker import DecodeWorker, DecodeOutput
+from .encoder_worker import EncoderWorker
+from .prefill_worker import PrefillWorker
+from .decode_worker import DecodeWorker
 
 logger = logging.getLogger(__name__)
+
+MAX_STATS_HISTORY = 10000
 
 
 @dataclass
 class PipelineStats:
-    """流水线统计"""
     encode_time_ms: float = 0.0
     transfer_e2p_time_ms: float = 0.0
     prefill_time_ms: float = 0.0
@@ -32,7 +29,7 @@ class PipelineStats:
     total_time_ms: float = 0.0
     tokens_generated: int = 0
     tokens_per_second: float = 0.0
-    ttft_ms: float = 0.0  # Time to First Token
+    ttft_ms: float = 0.0
 
     def summary(self) -> Dict[str, float]:
         return {
@@ -52,11 +49,6 @@ class EPDPipeline:
     """
     EPD 三阶段分离流水线
 
-    支持两种模式：
-    1. 单机模式：E/P/D 在同一台机器的不同 GPU 上
-    2. 分离模式：E/P/D 在不同节点上，通过 Transfer Engine 通信
-
-    数据流：
     Image → [Encoder GPU] → Hidden States → [Transfer E→P] →
     [Prefill GPU] → KV Cache → [Transfer P→D] → [Decode GPU] → Text
     """
@@ -87,31 +79,16 @@ class EPDPipeline:
         image_sizes: Optional[List[Tuple[int, int]]] = None,
         max_new_tokens: int = 128,
         temperature: float = 0.7,
-    ) -> Tuple[DecodeOutput, PipelineStats]:
-        """
-        执行完整的 EPD 流水线。
-
-        Args:
-            pixel_values: 预处理后的图像张量
-            input_ids: 文本 token IDs
-            image_sizes: 图像尺寸
-            max_new_tokens: 最大生成 token 数
-            temperature: 采样温度
-
-        Returns:
-            (DecodeOutput, PipelineStats): 解码输出和流水线统计
-        """
+    ) -> Tuple[Any, PipelineStats]:
         pipeline_start = time.perf_counter()
         stats = PipelineStats()
 
-        # === Stage 1: Encoder ===
+        # E: Encoder
         t0 = time.perf_counter()
-        encoder_output = self.encoder.encode_images(
-            pixel_values, image_sizes
-        )
+        encoder_output = self.encoder.encode_images(pixel_values, image_sizes)
         stats.encode_time_ms = (time.perf_counter() - t0) * 1000
 
-        # === Transfer: E → P ===
+        # Transfer E→P
         t0 = time.perf_counter()
         if self.transfer is not None:
             hidden_states = self.transfer.transfer_hidden_states(
@@ -123,20 +100,18 @@ class EPDPipeline:
             hidden_states = encoder_output.hidden_states.to(self.prefill_device)
         stats.transfer_e2p_time_ms = (time.perf_counter() - t0) * 1000
 
-        # === Stage 2: Prefill ===
+        # P: Prefill
         t0 = time.perf_counter()
         prefill_output = self.prefill.prefill(
-            input_ids=input_ids,
-            hidden_states=hidden_states,
+            input_ids=input_ids, hidden_states=hidden_states,
         )
         stats.prefill_time_ms = (time.perf_counter() - t0) * 1000
 
-        # === Transfer: P → D ===
+        # Transfer P→D
         t0 = time.perf_counter()
         if self.transfer is not None and prefill_output.kv_cache is not None:
             kv_cache = self.transfer.transfer_kv_cache(
-                prefill_output.kv_cache,
-                target_device=self.decode_device,
+                prefill_output.kv_cache, target_device=self.decode_device,
             )
         elif prefill_output.kv_cache is not None:
             kv_cache = (
@@ -147,19 +122,17 @@ class EPDPipeline:
             kv_cache = None
         stats.transfer_p2d_time_ms = (time.perf_counter() - t0) * 1000
 
-        # TTFT = encode + transfer_e2p + prefill + transfer_p2d + first decode token
-        stats.ttft_ms = (
-            stats.encode_time_ms + stats.transfer_e2p_time_ms +
-            stats.prefill_time_ms + stats.transfer_p2d_time_ms
-        )
-
-        # === Stage 3: Decode ===
-        t0 = time.perf_counter()
+        # D: Decode — derive first token using same temperature
         if prefill_output.logits is not None:
-            first_token = torch.argmax(prefill_output.logits, dim=-1, keepdim=True)
+            if temperature > 0:
+                probs = torch.softmax(prefill_output.logits / temperature, dim=-1)
+                first_token = torch.multinomial(probs, num_samples=1)
+            else:
+                first_token = torch.argmax(prefill_output.logits, dim=-1, keepdim=True)
         else:
             first_token = input_ids[:, -1:]
 
+        t0 = time.perf_counter()
         decode_output = self.decode.decode(
             input_ids=first_token,
             kv_cache=kv_cache,
@@ -171,43 +144,43 @@ class EPDPipeline:
         stats.total_time_ms = (time.perf_counter() - pipeline_start) * 1000
         stats.tokens_generated = decode_output.metadata["num_generated_tokens"]
         stats.tokens_per_second = decode_output.tokens_per_second
+        # TTFT includes first decode step
+        stats.ttft_ms = (
+            stats.encode_time_ms + stats.transfer_e2p_time_ms
+            + stats.prefill_time_ms + stats.transfer_p2d_time_ms
+            + (stats.decode_time_ms / max(stats.tokens_generated, 1))
+        )
 
-        self._stats_history.append(stats)
-
-        logger.info(f"Pipeline complete: {stats.summary()}")
+        if len(self._stats_history) < MAX_STATS_HISTORY:
+            self._stats_history.append(stats)
 
         return decode_output, stats
 
     def process_batch(
-        self,
-        batch: List[Dict[str, Any]],
-        max_new_tokens: int = 128,
-    ) -> List[Tuple[DecodeOutput, PipelineStats]]:
-        """批量处理"""
-        results = []
-        for item in batch:
-            result = self.process(
+        self, batch: List[Dict[str, Any]], max_new_tokens: int = 128,
+    ) -> List[Tuple[Any, PipelineStats]]:
+        return [
+            self.process(
                 pixel_values=item["pixel_values"],
                 input_ids=item["input_ids"],
                 image_sizes=item.get("image_sizes"),
                 max_new_tokens=max_new_tokens,
             )
-            results.append(result)
-        return results
+            for item in batch
+        ]
 
-    def get_aggregate_stats(self) -> Dict[str, float]:
-        """获取聚合统计"""
+    def get_aggregate_stats(self) -> Dict[str, Any]:
         if not self._stats_history:
             return {}
-
-        n = len(self._stats_history)
+        keys = [
+            "encode_time_ms", "transfer_e2p_time_ms", "prefill_time_ms",
+            "transfer_p2d_time_ms", "decode_time_ms", "total_time_ms", "ttft_ms",
+        ]
         agg = {}
-        for key in ["encode_ms", "transfer_e2p_ms", "prefill_ms",
-                     "transfer_p2d_ms", "decode_ms", "total_ms", "ttft_ms"]:
-            values = [getattr(s, key.replace("_ms", "").replace("_e2p", "_e2p") + "_ms", 0)
-                      for s in self._stats_history]
+        for key in keys:
+            values = [getattr(s, key, 0) for s in self._stats_history]
             agg[key] = {
-                "mean": sum(values) / n,
+                "mean": sum(values) / len(values),
                 "min": min(values),
                 "max": max(values),
             }
@@ -217,3 +190,7 @@ class EPDPipeline:
         self._stats_history.clear()
         if self.transfer:
             self.transfer.reset_stats()
+
+    def shutdown(self):
+        if self.transfer:
+            self.transfer.shutdown()

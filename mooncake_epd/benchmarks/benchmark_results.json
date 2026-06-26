@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-06-26 08:18:51",
+  "timestamp": "2026-06-26 23:58:46",
   "num_devices": 4,
   "results": [
     {
       "name": "transfer_bandwidth",
       "mode": "tcp",
       "metrics": {
-        "transfer_1024_gbps": 1.284,
-        "transfer_10240_gbps": 13.417,
-        "transfer_102400_gbps": 120.452,
-        "transfer_1048576_gbps": 1240.088
+        "transfer_1024_gbps": 1.044,
+        "transfer_10240_gbps": 9.907,
+        "transfer_102400_gbps": 92.215,
+        "transfer_1048576_gbps": 931.355
       },
       "config": {
         "num_devices": 4,
@@ -20,11 +20,11 @@
       "name": "epd_pipeline",
       "mode": "epd_disagg",
       "metrics": {
-        "avg_latency_ms": 167.31,
-        "p50_latency_ms": 160.26,
-        "p99_latency_ms": 207.98,
-        "avg_ttft_ms": 2.54,
-        "avg_throughput_tps": 204.59,
+        "avg_latency_ms": 73.48,
+        "p50_latency_ms": 65.09,
+        "p99_latency_ms": 131.64,
+        "avg_ttft_ms": 4.19,
+        "avg_throughput_tps": 494.47,
         "total_requests": 10
       },
       "config": {
@@ -37,14 +37,14 @@
       "name": "agent_cloning",
       "mode": "zero_copy",
       "metrics": {
-        "clone_2_branches_ms": 0.098,
-        "clone_2_per_branch_ms": 0.049,
-        "clone_4_branches_ms": 0.142,
-        "clone_4_per_branch_ms": 0.036,
-        "clone_8_branches_ms": 0.248,
-        "clone_8_per_branch_ms": 0.031,
-        "clone_16_branches_ms": 0.471,
-        "clone_16_per_branch_ms": 0.029
+        "clone_2_branches_ms": 0.071,
+        "clone_2_per_branch_ms": 0.036,
+        "clone_4_branches_ms": 0.107,
+        "clone_4_per_branch_ms": 0.027,
+        "clone_8_branches_ms": 0.19,
+        "clone_8_per_branch_ms": 0.024,
+        "clone_16_branches_ms": 0.362,
+        "clone_16_per_branch_ms": 0.023
       },
       "config": {
         "num_layers": 32,
@@ -56,9 +56,9 @@
       "mode": "lru_cache",
       "metrics": {
         "cache_hit_rate": 1.0,
-        "avg_cache_lookup_ms": 7.2577,
-        "avg_encode_no_cache_ms": 0.64,
-        "speedup": 0.1,
+        "avg_cache_lookup_ms": 0.1007,
+        "avg_encode_no_cache_ms": 0.23,
+        "speedup": 2.3,
         "cache_stats": {
           "total_entries": 10,
           "cache_size_mb": 40.0,

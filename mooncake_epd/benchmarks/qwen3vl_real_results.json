@@ -1,63 +1,63 @@
 {
   "model": "Qwen3-VL-8B-Instruct",
-  "timestamp": "2026-06-26 08:45:56",
+  "timestamp": "2026-06-27 00:02:04",
   "gpu_encoder": "GPU6 (cuda:0)",
   "gpu_decode": "GPU7 (cuda:1)",
   "results": {
     "vision_encoder": {
-      "encode_224x224_ms": 28.59,
+      "encode_224x224_ms": 37.91,
       "hidden_shape_224": "[256, 1152]",
-      "encode_336x336_ms": 24.04,
+      "encode_336x336_ms": 30.79,
       "hidden_shape_336": "[400, 1152]",
-      "encode_448x448_ms": 24.28,
+      "encode_448x448_ms": 44.89,
       "hidden_shape_448": "[784, 1152]"
     },
     "transfer_bandwidth": {
       "kv_size_mb": 29.25,
-      "avg_transfer_ms": 3.38,
-      "p50_ms": 3.37,
-      "bandwidth_gbps": 72.61,
+      "avg_transfer_ms": 18.76,
+      "p50_ms": 13.17,
+      "bandwidth_gbps": 13.08,
       "hidden_state_size_mb": 1.72,
-      "hidden_state_transfer_ms": 0.16,
-      "hidden_state_bandwidth_gbps": 91.42
+      "hidden_state_transfer_ms": 0.28,
+      "hidden_state_bandwidth_gbps": 51.48
     },
     "epd_disaggregation": {
-      "encode_ms": 28.27,
-      "prefill_ms": 88.05,
+      "encode_ms": 81.39,
+      "prefill_ms": 104.21,
       "input_tokens": 212,
       "kv_layers": 36,
       "kv_shape_per_layer": "[1, 8, 212, 128]",
       "kv_size_mb": 29.81,
-      "transfer_p2d_ms": 30.61,
-      "transfer_bandwidth_gbps": 8.17,
-      "decode_total_ms": 710.81,
+      "transfer_p2d_ms": 31.13,
+      "transfer_bandwidth_gbps": 8.03,
+      "decode_total_ms": 858.1,
       "decode_steps": 16,
-      "avg_decode_step_ms": 44.3,
-      "tokens_per_second": 22.51,
-      "ttft_ms": 215.16,
+      "avg_decode_step_ms": 52.69,
+      "tokens_per_second": 18.65,
+      "ttft_ms": 312.21,
       "generated_text": " image is a smooth, seamless color gradient that transitions across the entire frame, creating"
     },
     "single_node": {
-      "avg_total_ms": 1416.13,
+      "avg_total_ms": 1703.3,
       "tokens_generated": 32,
-      "tokens_per_second": 22.6,
-      "ttft_approx_ms": 44.25
+      "tokens_per_second": 18.79,
+      "ttft_approx_ms": 53.23
     },
     "agent_cloning": {
       "kv_cache_size_mb": 30.09,
-      "clone_2_total_ms": 0.0792,
-      "clone_2_per_branch_ms": 0.0396,
-      "clone_4_total_ms": 0.1131,
-      "clone_4_per_branch_ms": 0.0283,
-      "clone_8_total_ms": 0.2082,
-      "clone_8_per_branch_ms": 0.026
+      "clone_2_total_ms": 0.073,
+      "clone_2_per_branch_ms": 0.0365,
+      "clone_4_total_ms": 0.1083,
+      "clone_4_per_branch_ms": 0.0271,
+      "clone_8_total_ms": 0.192,
+      "clone_8_per_branch_ms": 0.024
     },
     "prefix_caching": {
-      "avg_encode_ms": 23.69,
-      "avg_cache_put_ms": 13.62,
+      "avg_encode_ms": 45.69,
+      "avg_cache_put_ms": 1.55,
       "hit_rate": 1.0,
-      "avg_lookup_ms": 12.2865,
-      "speedup_vs_encode": 1.9,
+      "avg_lookup_ms": 1.0725,
+      "speedup_vs_encode": 42.6,
       "cache_size_mb": 1.72
     }
   }
