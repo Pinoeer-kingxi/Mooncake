@@ -1,0 +1,34 @@
+{
+  "model": "/home/songbinbin/Proj/Proj_LWX/Qwen3-VL-8B-Instruct",
+  "model_type": "Qwen3-VL-8B-Instruct",
+  "timestamp": "2026-06-26 08:42:00",
+  "hardware": {
+    "encoder_gpu": 0,
+    "prefill_gpu": 0,
+    "decode_gpu": 1,
+    "gpu_model": "RTX A6000 48GB",
+    "protocol": "tcp (no RDMA)"
+  },
+  "results": {
+    "vision_encoder": {
+      "error": "Qwen3VLVisionModel.forward() missing 1 required positional argument: 'grid_thw'"
+    },
+    "transfer_bandwidth": {
+      "error": "too many values to unpack (expected 2)"
+    },
+    "epd_disaggregation": {
+      "error": "Qwen3VLVisionModel.forward() missing 1 required positional argument: 'grid_thw'"
+    },
+    "single_vs_disagg": {
+      "single_node_total_ms": 770.12,
+      "single_node_tokens": 16,
+      "single_node_tps": 20.78
+    },
+    "agent_cloning": {
+      "error": "too many values to unpack (expected 2)"
+    },
+    "prefix_caching": {
+      "error": "No module named 'mooncake_epd'"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "prefill_url": "127.0.0.1:9100",
+  "decode_url": "127.0.0.1:9200",
+  "metadata_server": "http://127.0.0.1:8080/metadata",
+  "metadata_backend": "http",
+  "protocol": "tcp",
+  "device_name": ""
+}
