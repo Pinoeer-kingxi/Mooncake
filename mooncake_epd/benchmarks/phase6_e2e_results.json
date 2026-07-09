@@ -1,0 +1,159 @@
+{
+  "dataset": {
+    "total_examples": 8,
+    "by_scenario": {
+      "tool_use_vqa": 2,
+      "multi_turn": 2,
+      "tree_of_thought": 3,
+      "a2a_handoff": 1
+    },
+    "by_image": {
+      "objects": 1,
+      "bar_chart": 1,
+      "room": 2,
+      "document": 1,
+      "map": 3
+    },
+    "unique_images": [
+      "bar_chart",
+      "document",
+      "map",
+      "objects",
+      "room"
+    ]
+  },
+  "baseline": [
+    {
+      "scenario": "tool_use_vqa",
+      "image": "objects",
+      "prompt_tokens": 255,
+      "generated_tokens": 16,
+      "total_ms": 1399.4423019466922,
+      "tokens_per_sec": 11.433125880033227,
+      "text": "Based on the image provided, here are the distinct objects I can see:\n\n-"
+    },
+    {
+      "scenario": "multi_turn",
+      "image": "room",
+      "prompt_tokens": 251,
+      "generated_tokens": 16,
+      "total_ms": 717.3622889677063,
+      "tokens_per_sec": 22.303932400773686,
+      "text": "Based on the image provided, here is a description of the scene:\n\nThis is"
+    },
+    {
+      "scenario": "tree_of_thought",
+      "image": "map",
+      "prompt_tokens": 251,
+      "generated_tokens": 16,
+      "total_ms": 717.2024559695274,
+      "tokens_per_sec": 22.30890296990256,
+      "text": "Based on the visual evidence in the map, here is the analysis of the main"
+    },
+    {
+      "scenario": "a2a_handoff",
+      "image": "room",
+      "prompt_tokens": 257,
+      "generated_tokens": 16,
+      "total_ms": 718.0825249524787,
+      "tokens_per_sec": 22.281561581043697,
+      "text": "Based on the image provided, here is a detailed inventory of every visible object:\n\n"
+    }
+  ],
+  "epd_step0": [
+    {
+      "scenario": "tool_use_vqa",
+      "image": "objects",
+      "prompt_tokens": 255,
+      "ttft_ms": 198.40613997075707,
+      "encode_ms": 118.638078100048,
+      "prefill_ms": 68.03568499162793,
+      "generated_tokens": 16,
+      "decode_tok_per_sec": 23.376867963654192,
+      "total_ms": 843.4709180146456,
+      "text": "Based on the image provided, here are the distinct objects I can see:\n\n-"
+    },
+    {
+      "scenario": "multi_turn",
+      "image": "room",
+      "prompt_tokens": 251,
+      "ttft_ms": 83.90497404616326,
+      "encode_ms": 35.7458220096305,
+      "prefill_ms": 46.08526697847992,
+      "generated_tokens": 16,
+      "decode_tok_per_sec": 23.04874446181745,
+      "total_ms": 736.9833040283993,
+      "text": "Based on the image provided, here is a description of the room:\n\nThis is"
+    },
+    {
+      "scenario": "tree_of_thought",
+      "image": "map",
+      "prompt_tokens": 251,
+      "ttft_ms": 83.97322800010443,
+      "encode_ms": 35.81232693977654,
+      "prefill_ms": 46.08724592253566,
+      "generated_tokens": 16,
+      "decode_tok_per_sec": 21.793421004269337,
+      "total_ms": 774.5824069716036,
+      "text": "Based on the visual evidence in the map, here is the analysis of the main"
+    },
+    {
+      "scenario": "a2a_handoff",
+      "image": "room",
+      "prompt_tokens": 257,
+      "ttft_ms": 98.63993700128049,
+      "encode_ms": 42.84930496942252,
+      "prefill_ms": 53.360807010903955,
+      "generated_tokens": 16,
+      "decode_tok_per_sec": 23.02768531562518,
+      "total_ms": 752.8568360721692,
+      "text": "Based on the image provided, here is a detailed inventory of every visible object:\n\n"
+    }
+  ],
+  "cross_step_reuse": [
+    {
+      "scenario": "tool_use_vqa",
+      "image": "objects",
+      "step0_tokens": 252,
+      "step1_tokens": 278,
+      "matched_tokens": 240,
+      "delta_tokens": 38,
+      "reuse_ratio": 0.8633093525179856,
+      "match_time_ms": 0.10413804557174444,
+      "feature_cache_hits": 0
+    },
+    {
+      "scenario": "multi_turn",
+      "image": "room",
+      "step0_tokens": 248,
+      "step1_tokens": 275,
+      "matched_tokens": 240,
+      "delta_tokens": 35,
+      "reuse_ratio": 0.8727272727272727,
+      "match_time_ms": 0.16393500845879316,
+      "feature_cache_hits": 0
+    },
+    {
+      "scenario": "tree_of_thought",
+      "image": "map",
+      "step0_tokens": 248,
+      "step1_tokens": 278,
+      "matched_tokens": 240,
+      "delta_tokens": 38,
+      "reuse_ratio": 0.8633093525179856,
+      "match_time_ms": 0.10827404912561178,
+      "feature_cache_hits": 0
+    },
+    {
+      "scenario": "a2a_handoff",
+      "image": "room",
+      "step0_tokens": 254,
+      "step1_tokens": 285,
+      "matched_tokens": 240,
+      "delta_tokens": 45,
+      "reuse_ratio": 0.8421052631578947,
+      "match_time_ms": 0.10957603808492422,
+      "feature_cache_hits": 0
+    }
+  ]
+}
