@@ -87,7 +87,7 @@ class VLLMDisaggConfig:
     encoder_service_url: Optional[str] = None
     prefill_direct_buffer_service_url: Optional[str] = None
     enable_prefill_direct_feature_buffer_routes: bool = False
-    direct_feature_buffer_root_routes: bool = True
+    direct_feature_buffer_root_routes: bool = False
     release_direct_feature_buffers_after_prefill: bool = True
     strict_no_fallback: bool = False
 
@@ -170,6 +170,10 @@ def _common_env_block(
     *,
     bootstrap_port: Optional[int] = None,
 ) -> str:
+    # ``REPO_ROOT`` is the package root (``.../mooncake_epd``); importing the
+    # package requires the containing Mooncake checkout on PYTHONPATH.  Keep this
+    # explicit so generated scripts are portable between the standalone tree and
+    # the merged Mooncake repository.
     parent_path = str(REPO_ROOT.parent)
     lines = [
         "unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY",
@@ -188,6 +192,7 @@ def _common_env_block(
         "export MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE=${MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE:-1}",
         "export MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE_MAX_ENTRIES=${MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE_MAX_ENTRIES:-64}",
         "export MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE_MAX_BYTES=${MOONCAKE_EPD_VLLM_MM_HIDDEN_CACHE_MAX_BYTES:-2147483648}",
+        f"export MOONCAKE_EPD_REPO_ROOT={REPO_ROOT.parent}",
     ]
     if config.strict_no_fallback:
         lines.extend(

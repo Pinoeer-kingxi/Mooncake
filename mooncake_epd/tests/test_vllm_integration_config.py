@@ -62,6 +62,7 @@ def test_generate_configs_enables_prefill_direct_feature_buffer_routes(tmp_path)
     assert "export MOONCAKE_EPD_DIRECT_BUFFER_WORKER_ID=prefill-0" in prefill_script
     assert "export MOONCAKE_EPD_FEATURE_HANDLE_WORKER_ID=prefill-0" in prefill_script
     assert "export MOONCAKE_EPD_DIRECT_BUFFER_DEVICE=cuda" in prefill_script
+    assert "export MOONCAKE_EPD_DIRECT_BUFFER_ROOT_ROUTES=0" in prefill_script
     assert "--encoder-service-url http://127.0.0.1:8330" in proxy_script
     assert f"--prefill-direct-buffer-service-url {config.prefill_direct_buffer_service_url}" in proxy_script
     assert "--release-direct-feature-buffers-after-prefill" in proxy_script

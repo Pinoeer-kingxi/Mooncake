@@ -754,7 +754,7 @@ async def _request_direct_feature_handles_from_encoder_service(
 
     try:
         alloc_resp = await direct_client.post(
-            "allocate",
+            "/mooncake_epd/direct_feature_buffer/allocate",
             json={
                 "descriptors": descriptors,
                 "target_worker_id": target_worker_id,
@@ -833,7 +833,10 @@ async def _release_direct_feature_buffers_after_prefill(app: FastAPI, req_data: 
         return
     client: httpx.AsyncClient = app.state.prefill_direct_buffer_client
     try:
-        response = await client.post("release", json={"feature_ids": sorted(set(feature_ids))})
+        response = await client.post(
+            "/mooncake_epd/direct_feature_buffer/release",
+            json={"feature_ids": sorted(set(feature_ids))},
+        )
         response.raise_for_status()
     except Exception as exc:
         # Release failure is operationally serious but the P→D handoff may have

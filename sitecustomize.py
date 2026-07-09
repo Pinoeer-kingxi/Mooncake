@@ -419,7 +419,7 @@ def _install_direct_feature_buffer_routes(app: Any) -> None:
     app.post(f"{prefix}/allocate")(_allocate)
     app.post(f"{prefix}/release")(_release)
     app.get(f"{prefix}/stats")(_stats)
-    if _env_bool("MOONCAKE_EPD_DIRECT_BUFFER_ROOT_ROUTES", True):
+    if _env_bool("MOONCAKE_EPD_DIRECT_BUFFER_ROOT_ROUTES", False):
         app.post("/allocate")(_allocate)
         app.post("/release")(_release)
         app.get("/direct_feature_buffer_stats")(_stats)
